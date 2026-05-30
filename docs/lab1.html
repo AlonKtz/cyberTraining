@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lab 1 – SQL Injection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <span class="logo">&#128737; CyberTraining</span>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="lab1.html" class="active">SQL Injection</a>
+    <a href="lab2.html">XSS</a>
+    <a href="lab3.html">CSRF</a>
+    <a href="lab4.html">Passwords</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Lab 1</div>
+
+  <div class="page-header">
+    <div class="tag" style="color:var(--danger)">Lab 1 — SQL Injection</div>
+    <h1>SQL Injection</h1>
+    <p>An attacker puts database commands inside form fields. The server blindly stitches them into a query and executes whatever they wrote.</p>
+  </div>
+
+  <div class="callout callout-blue">
+    <strong>&#128218; How it works</strong>
+    When a login query is built like:<br>
+    <code style="font-family:var(--mono)">"SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'"</code><br><br>
+    …an attacker can type <code style="font-family:var(--mono)">' OR '1'='1</code> as the password and the resulting SQL becomes always-true, bypassing authentication entirely.
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'vuln')">&#9888; Vulnerable</button>
+    <button class="tab-btn" onclick="switchTab(this,'secure')">&#9989; Secure</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+  </div>
+
+  <!-- VULNERABLE TAB -->
+  <div id="tab-vuln" class="tab-pane active">
+    <div class="callout callout-red">
+      <strong>&#9888; Vulnerable login</strong>
+      This builds its SQL query using string concatenation. The database executes whatever you inject.
+    </div>
+
+    <div class="cols">
+      <div class="panel danger">
+        <h3>Login Form <span class="pill pill-vuln">VULNERABLE</span></h3>
+        <div class="form-group">
+          <label>Username</label>
+          <input id="v-user" type="text" value="admin" placeholder="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="v-pass" type="text" value="" placeholder="try an injection payload">
+        </div>
+        <button class="btn btn-danger" onclick="vulnLogin()">Attempt Login</button>
+
+        <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show hint</button>
+        <div id="h1" class="hint-box">
+          Try these as the password:<br><br>
+          <code>' OR '1'='1</code><br>
+          <code>' OR 1=1--</code><br>
+          <code>' OR 'x'='x</code><br><br>
+          Or dump all users — username: <code>' OR 1=1--</code>
+        </div>
+
+        <div id="v-query" class="query-box"></div>
+        <div id="v-result" class="output hidden"></div>
+      </div>
+
+      <div>
+        <div class="panel" style="background:var(--code-bg)">
+          <h3>Code (vulnerable)</h3>
+          <pre>// ❌ DANGEROUS — never do this
+const query =
+  "SELECT * FROM users " +
+  "WHERE username = '" + username + "'" +
+  " AND password = '" + password + "'"
+
+db.execute(query)</pre>
+        </div>
+        <div class="panel warn">
+          <h3>What happens with a payload</h3>
+          <p style="font-size:.88rem;color:var(--muted);margin-bottom:.5rem">username=<code>admin</code> · password=<code>' OR '1'='1</code></p>
+          <pre style="color:var(--danger)">SELECT * FROM users
+WHERE username = 'admin'
+  AND password = '' OR '1'='1'
+--  ^^^ always true ^^^</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURE TAB -->
+  <div id="tab-secure" class="tab-pane">
+    <div class="callout callout-green">
+      <strong>&#9989; Secure login</strong>
+      Uses a parameterized query. The <code>?</code> placeholder is always treated as data — never as SQL code.
+    </div>
+
+    <div class="cols">
+      <div class="panel success">
+        <h3>Login Form <span class="pill pill-safe">SECURE</span></h3>
+        <div class="form-group">
+          <label>Username</label>
+          <input id="s-user" type="text" value="admin" placeholder="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="s-pass" type="text" value="" placeholder="try the same injection payload">
+        </div>
+        <button class="btn btn-success" onclick="secureLogin()">Attempt Login</button>
+        <p style="margin-top:.75rem;font-size:.83rem;color:var(--muted)">Hint: try <code>' OR '1'='1</code> — it will fail.</p>
+        <div id="s-result" class="output hidden"></div>
+      </div>
+
+      <div>
+        <div class="panel" style="background:var(--code-bg)">
+          <h3>Code (secure)</h3>
+          <pre>// ✅ Parameterized query
+const user = db.prepare(
+  'SELECT * FROM users WHERE username = ?'
+).get(username)
+
+if (user && user.password === password) {
+  // logged in
+}</pre>
+        </div>
+        <div class="panel success">
+          <h3>Why this is safe</h3>
+          <p style="font-size:.88rem;color:var(--muted)">The <code>?</code> placeholder is passed separately. The driver escapes it as a literal value — injected SQL is never parsed as a command.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPLANATION TAB -->
+  <div id="tab-explain" class="tab-pane">
+    <div class="panel">
+      <h3>&#128218; Full Explanation</h3>
+      <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
+        <p><strong style="color:var(--text)">Root cause:</strong> The server builds SQL by gluing user input directly into the query string. The database engine has no way to tell what is "data" vs what is "command".</p>
+        <br>
+        <p><strong style="color:var(--text)">Classic bypass:</strong> Typing <code>' OR '1'='1</code> as a password closes the quote, adds a condition that is always true, and logs in as any user.</p>
+        <br>
+        <p><strong style="color:var(--text)">Comment trick:</strong> Using <code>--</code> in a payload comments out the rest of the query. So <code>admin'--</code> as a username logs in as admin with any password.</p>
+        <br>
+        <p><strong style="color:var(--text)">Data exfiltration:</strong> More advanced payloads use <code>UNION SELECT</code> to read other tables and exfiltrate data.</p>
+        <br>
+        <p><strong style="color:var(--text)">Fix:</strong> Always use parameterized queries (prepared statements). The input is passed as a bound parameter — the driver handles escaping and the database treats it as data, never code.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>&#127937; Challenge: dump all users</h3>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Using the vulnerable login, craft a username payload that returns every row in the users table. Hint: use <code>--</code> to comment out the AND clause.</p>
+      <button class="hint-toggle" onclick="toggleHint('h2')">&#128161; Show solution</button>
+      <div id="h2" class="hint-box">
+        Username: <code>' OR 1=1--</code> &nbsp; Password: (anything)<br><br>
+        Resulting query:<br>
+        <code>SELECT * FROM users WHERE username = '' OR 1=1-- AND password = '...'</code><br><br>
+        The <code>--</code> comments out everything after it. <code>OR 1=1</code> is always true, returning all rows.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── In-memory "database" ──────────────────────────────────────────
+const DB_USERS = [
+  { id:1, username:'admin', password:'admin123', email:'admin@bank.com',    secret:'FLAG{sql_injection_success}' },
+  { id:2, username:'alice', password:'password1',email:'alice@example.com', secret:'alice_private_data' },
+  { id:3, username:'bob',   password:'hunter2',  email:'bob@example.com',   secret:'bob_private_data' },
+];
+
+// ── Minimal SQL WHERE-clause evaluator ────────────────────────────
+function evalWhere(clause, row) {
+  clause = clause.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  if (!clause) return true;
+  const toks = tokenizeSql(clause);
+  const pos = {i:0};
+  return !!parseOrExpr(toks, pos, row);
+}
+
+function tokenizeSql(s) {
+  const out = [];
+  let i = 0;
+  while (i < s.length) {
+    if (/\s/.test(s[i])) { i++; continue; }
+    if (s[i] === "'") {
+      let j = i+1;
+      while (j < s.length && s[j] !== "'") j++;
+      out.push({t:'s', v:s.slice(i+1,j)});
+      i = j+1; continue;
+    }
+    if (/\d/.test(s[i])) {
+      let j = i;
+      while (j < s.length && /\d/.test(s[j])) j++;
+      out.push({t:'n', v:+s.slice(i,j)});
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(s[i])) {
+      let j = i;
+      while (j < s.length && /\w/.test(s[j])) j++;
+      const w = s.slice(i,j), up = w.toUpperCase();
+      out.push(up==='AND'||up==='OR' ? {t:'k',v:up} : {t:'i',v:w});
+      i = j; continue;
+    }
+    if (s[i]==='=') { out.push({t:'='}); i++; continue; }
+    if (s[i]==='(') { out.push({t:'('}); i++; continue; }
+    if (s[i]===')') { out.push({t:')'}); i++; continue; }
+    i++;
+  }
+  return out;
+}
+
+function parseOrExpr(toks, pos, row) {
+  let v = parseAndExpr(toks, pos, row);
+  while (pos.i < toks.length && toks[pos.i]?.t==='k' && toks[pos.i]?.v==='OR') {
+    pos.i++;
+    v = parseAndExpr(toks, pos, row) || v;
+  }
+  return v;
+}
+
+function parseAndExpr(toks, pos, row) {
+  let v = parseCmpExpr(toks, pos, row);
+  while (pos.i < toks.length && toks[pos.i]?.t==='k' && toks[pos.i]?.v==='AND') {
+    pos.i++;
+    v = parseCmpExpr(toks, pos, row) && v;
+  }
+  return v;
+}
+
+function parseCmpExpr(toks, pos, row) {
+  const lhs = parseAtom(toks, pos, row);
+  if (toks[pos.i]?.t==='=') {
+    pos.i++;
+    const rhs = parseAtom(toks, pos, row);
+    return String(lhs) === String(rhs);
+  }
+  return !!lhs;
+}
+
+function parseAtom(toks, pos, row) {
+  const tok = toks[pos.i];
+  if (!tok) return null;
+  pos.i++;
+  if (tok.t==='s') return tok.v;
+  if (tok.t==='n') return tok.v;
+  if (tok.t==='i') return Object.prototype.hasOwnProperty.call(row, tok.v) ? row[tok.v] : tok.v;
+  if (tok.t==='(') {
+    const v = parseOrExpr(toks, pos, row);
+    if (toks[pos.i]?.t===')') pos.i++;
+    return v;
+  }
+  return null;
+}
+
+// ── Lab functions ─────────────────────────────────────────────────
+function vulnLogin() {
+  const username = document.getElementById('v-user').value;
+  const password = document.getElementById('v-pass').value;
+  const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;
+
+  const qbox = document.getElementById('v-query');
+  const result = document.getElementById('v-result');
+
+  let rows = [];
+  let error = null;
+  try {
+    const where = (query.match(/WHERE\s+(.+)$/i)||[])[1] || '';
+    rows = DB_USERS.filter(row => evalWhere(where, row));
+  } catch(e) {
+    error = e.message;
+  }
+
+  qbox.style.display = 'block';
+  qbox.textContent = '▶ Query executed:\n' + query;
+
+  result.style.display = 'block';
+  if (error) {
+    result.className = 'output err';
+    result.textContent = '❌ SQL error: ' + error;
+  } else if (rows.length > 0) {
+    result.className = 'output ok';
+    result.textContent = '✅ LOGIN SUCCESS — ' + rows.length + ' row(s) returned\n';
+    rows.forEach(r => {
+      result.textContent += `\n  user: ${r.username} | email: ${r.email}\n  🚩 secret: ${r.secret}`;
+    });
+  } else {
+    result.className = 'output err';
+    result.textContent = '❌ Invalid credentials';
+  }
+}
+
+function secureLogin() {
+  const username = document.getElementById('s-user').value;
+  const password = document.getElementById('s-pass').value;
+  const result = document.getElementById('s-result');
+
+  // Parameterized: exact match only, no parsing
+  const user = DB_USERS.find(u => u.username === username && u.password === password);
+
+  result.style.display = 'block';
+  result.className = 'output ' + (user ? 'ok' : 'err');
+  result.textContent = user
+    ? '✅ Welcome ' + user.username + '!'
+    : '❌ Invalid credentials';
+}
+
+// ── UI helpers ────────────────────────────────────────────────────
+function switchTab(btn, name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+</script>
+</body>
+</html>

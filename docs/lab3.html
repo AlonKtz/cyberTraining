@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lab 3 – CSRF</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <span class="logo">&#128737; CyberTraining</span>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="lab1.html">SQL Injection</a>
+    <a href="lab2.html">XSS</a>
+    <a href="lab3.html" class="active">CSRF</a>
+    <a href="lab4.html">Passwords</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Lab 3</div>
+
+  <div class="page-header">
+    <div class="tag" style="color:var(--accent)">Lab 3 — CSRF</div>
+    <h1>Cross-Site Request Forgery</h1>
+    <p>An attacker tricks a logged-in user into unknowingly sending a forged request to your server. The server sees a valid session cookie and obeys.</p>
+  </div>
+
+  <div class="callout callout-blue">
+    <strong>&#128218; How it works</strong>
+    Browsers automatically attach cookies to every request — even those triggered by a page on a different domain. If a malicious site posts a hidden form to your bank's <code>/transfer</code> endpoint while you're logged in, the bank will process it because the session cookie was sent automatically.
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'setup')">&#128274; Login First</button>
+    <button class="tab-btn" onclick="switchTab(this,'vuln')">&#9888; Vulnerable Attack</button>
+    <button class="tab-btn" onclick="switchTab(this,'secure')">&#9989; Secure</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+  </div>
+
+  <!-- SETUP TAB -->
+  <div id="tab-setup" class="tab-pane active">
+    <div class="callout callout-blue">
+      <strong>Step 1 — Log in as Alice</strong>
+      This sets a simulated session. Then visit the Vulnerable Attack tab to see the forged transfer succeed.
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <h3>Bank Login</h3>
+        <div class="form-group">
+          <label>Login as</label>
+          <select id="login-user">
+            <option value="alice">alice</option>
+            <option value="bob">bob</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="doLogin()">Login</button>
+        <div id="login-result" class="output hidden"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Account Balances</h3>
+        <div id="setup-balances"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderAllBalances()">&#8635; Refresh</button>
+      </div>
+    </div>
+
+    <div class="panel warn">
+      <h3>&#128073; Next steps</h3>
+      <ol style="font-size:.9rem;color:var(--muted);padding-left:1.25rem;line-height:2.2">
+        <li>Log in as <strong style="color:var(--text)">alice</strong> above</li>
+        <li>Go to <strong style="color:var(--text)">Vulnerable Attack</strong> — click the button to simulate a forged transfer</li>
+        <li>Refresh balances — the money moved without Alice doing anything on the bank site</li>
+        <li>Reset and try the <strong style="color:var(--text)">Secure</strong> tab — the same attack is blocked by the CSRF token</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- VULNERABLE TAB -->
+  <div id="tab-vuln" class="tab-pane">
+    <div class="callout callout-red">
+      <strong>&#9888; Simulated malicious page</strong>
+      This box mimics what an attacker at <code>evil.example.com</code> would do. It fires a transfer request using Alice's live session — no CSRF token check exists to stop it.
+    </div>
+
+    <div class="cols">
+      <div class="panel danger" style="border:2px dashed var(--danger)">
+        <h3 style="color:var(--danger)">&#9762; evil.example.com</h3>
+        <p style="font-size:.88rem;color:var(--muted);margin-bottom:1rem">You won a prize! Click below to claim it.</p>
+
+        <div style="background:var(--code-bg);border-radius:8px;padding:.75rem;font-family:var(--mono);font-size:.8rem;margin-bottom:1rem;color:var(--muted)">
+          <span style="color:var(--warn)">Hidden on the real evil page:</span><br>
+          &lt;form action="https://bank.example/transfer" method="POST"&gt;<br>
+          &nbsp;&nbsp;&lt;input name="to" value="hacker"&gt;<br>
+          &nbsp;&nbsp;&lt;input name="amount" value="500"&gt;<br>
+          &lt;/form&gt;<br>
+          &lt;script&gt;document.forms[0].submit()&lt;/script&gt;
+        </div>
+
+        <button class="btn btn-danger" onclick="vulnTransfer()">&#127873; Claim Your Prize (Attack!)</button>
+        <div id="v-attack-result" class="output hidden"></div>
+      </div>
+
+      <div>
+        <div class="panel" style="background:var(--code-bg)">
+          <h3>Vulnerable endpoint (no protection)</h3>
+          <pre>// ❌ Trusts session cookie blindly
+function transfer(req) {
+  const session = getSession(req.cookies)
+  // No CSRF check — any site can trigger this!
+  const { to, amount } = req.body
+  deductFrom(session.user, amount)
+  creditTo(to, amount)
+}</pre>
+        </div>
+        <div class="panel">
+          <h3>Balances after attack</h3>
+          <div id="v-balances"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderVBalances()">&#8635; Refresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURE TAB -->
+  <div id="tab-secure" class="tab-pane">
+    <div class="callout callout-green">
+      <strong>&#9989; CSRF token protection</strong>
+      The secure endpoint requires a secret token issued only to the legitimate page. A forged cross-site request can never include it (same-origin policy blocks reading it).
+    </div>
+
+    <div class="cols">
+      <div class="panel success">
+        <h3>Legitimate Transfer <span class="pill pill-safe">SECURE</span></h3>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Fetches a CSRF token first, includes it with the request.</p>
+        <div class="form-group">
+          <label>To</label>
+          <input id="s-to" type="text" value="bob">
+        </div>
+        <div class="form-group">
+          <label>Amount ($)</label>
+          <input id="s-amount" type="number" value="100">
+        </div>
+        <button class="btn btn-success" onclick="secureTransfer()">Transfer (with CSRF token)</button>
+        <div id="s-transfer-result" class="output hidden"></div>
+
+        <hr style="border-color:var(--border);margin:1rem 0">
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:.5rem">Now simulate the forged attack on the protected endpoint:</p>
+        <button class="btn btn-danger btn-sm" onclick="forgedTransfer()">&#9762; Forged request (no token)</button>
+        <div id="s-attack-result" class="output hidden"></div>
+      </div>
+
+      <div>
+        <div class="panel" style="background:var(--code-bg)">
+          <h3>Secure endpoint</h3>
+          <pre>// ✅ Validate CSRF token
+function transfer(req) {
+  const session = getSession(req.cookies)
+  const { to, amount, csrfToken } = req.body
+
+  if (session.csrfToken !== csrfToken) {
+    throw new Error('403 Forbidden — bad CSRF token')
+  }
+  // Token valid — process transfer
+  deductFrom(session.user, amount)
+  creditTo(to, amount)
+  session.csrfToken = newToken() // rotate
+}</pre>
+        </div>
+        <div class="panel">
+          <h3>Balances</h3>
+          <div id="s-balances"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderSBalances()">&#8635; Refresh</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPLANATION TAB -->
+  <div id="tab-explain" class="tab-pane">
+    <div class="panel">
+      <h3>&#128218; Full Explanation</h3>
+      <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
+        <p><strong style="color:var(--text)">Root cause:</strong> Browsers automatically attach cookies to every request to a domain, regardless of where the request originates. An attacker's page can submit a form to your site and your server can't tell if it came from your UI or theirs.</p>
+        <br>
+        <p><strong style="color:var(--text)">CSRF token fix:</strong> Generate a secret random token per session, embed it in every form as a hidden field. The server checks it on each state-changing request. A cross-site form can never read this token (same-origin policy) so it can't include it.</p>
+        <br>
+        <p><strong style="color:var(--text)">SameSite cookies:</strong> Setting <code>SameSite=Strict</code> on the session cookie tells the browser not to send it on cross-site requests at all — a modern, simpler defence that works alongside tokens.</p>
+        <br>
+        <p><strong style="color:var(--text)">Origin/Referer check:</strong> Reject requests whose <code>Origin</code> header doesn't match your domain. Simple but less robust on its own.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>&#127937; Challenge</h3>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Why can't the attacker just read Alice's CSRF token from the bank's page and include it in the forged form?</p>
+      <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show answer</button>
+      <div id="h1" class="hint-box">
+        The <strong>Same-Origin Policy</strong> prevents JavaScript on <code>evil.example.com</code> from reading content from <code>bank.example.com</code>. The attacker's page can <em>send</em> requests but can't <em>read</em> the response — so it can never retrieve the token.
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.5rem">
+    <button class="btn btn-ghost btn-sm" onclick="resetBalances()">&#8635; Reset balances</button>
+    <span id="reset-msg" style="margin-left:.75rem;font-size:.85rem;color:var(--success);display:none">Reset!</span>
+  </div>
+</div>
+
+<script>
+// ── Simulated bank state (localStorage) ──────────────────────────
+const DEFAULT_BALANCES = { alice: 1000, bob: 500 };
+
+function getBalances() {
+  const stored = localStorage.getItem('csrf_balances');
+  return stored ? JSON.parse(stored) : { ...DEFAULT_BALANCES };
+}
+
+function saveBalances(b) {
+  localStorage.setItem('csrf_balances', JSON.stringify(b));
+}
+
+// ── Simulated session (in-memory, resets on page reload) ──────────
+let SESSION = null;   // { username, csrfToken }
+
+function doLogin() {
+  const username = document.getElementById('login-user').value;
+  SESSION = { username, csrfToken: randomToken() };
+  const result = document.getElementById('login-result');
+  result.className = 'output ok';
+  result.style.display = 'block';
+  result.textContent = `✅ Logged in as ${username} — session active`;
+  renderAllBalances();
+}
+
+function randomToken() {
+  return [...crypto.getRandomValues(new Uint8Array(16))]
+    .map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── Transfer logic ────────────────────────────────────────────────
+function doTransfer(from, to, amount) {
+  const b = getBalances();
+  if (!b[from] && b[from] !== 0) return { ok:false, msg:`User "${from}" not found` };
+  if (b[from] < amount) return { ok:false, msg:'Insufficient funds' };
+  b[from] -= amount;
+  b[to] = (b[to] || 0) + amount;
+  saveBalances(b);
+  return { ok:true, newBalance: b[from] };
+}
+
+// ── Vulnerable: no CSRF check ─────────────────────────────────────
+function vulnTransfer() {
+  if (!SESSION) {
+    show('v-attack-result', '❌ Not logged in — go to the Login tab first', 'err');
+    return;
+  }
+  // Forged request arrives with a valid session but no token check
+  const result = doTransfer(SESSION.username, 'hacker', 500);
+  if (result.ok) {
+    show('v-attack-result',
+      `💀 ATTACK SUCCEEDED\n$500 transferred from ${SESSION.username} to hacker\nNew balance: $${result.newBalance}`,
+      'err');
+  } else {
+    show('v-attack-result', '⚠️ ' + result.msg, 'warn');
+  }
+  renderVBalances();
+}
+
+// ── Secure: validate CSRF token ───────────────────────────────────
+function secureTransfer() {
+  if (!SESSION) {
+    show('s-transfer-result', '❌ Not logged in — go to the Login tab first', 'err');
+    return;
+  }
+  const to     = document.getElementById('s-to').value;
+  const amount = parseInt(document.getElementById('s-amount').value);
+  const token  = SESSION.csrfToken;   // legitimate page has the token
+
+  if (!token || token !== SESSION.csrfToken) {
+    show('s-transfer-result', '🛡️ Blocked: invalid CSRF token', 'warn');
+    return;
+  }
+
+  const result = doTransfer(SESSION.username, to, amount);
+  SESSION.csrfToken = randomToken();  // rotate after use
+
+  if (result.ok) {
+    show('s-transfer-result',
+      `✅ Transferred $${amount} to ${to}\nNew balance: $${result.newBalance}`,
+      'ok');
+  } else {
+    show('s-transfer-result', '❌ ' + result.msg, 'err');
+  }
+  renderSBalances();
+}
+
+function forgedTransfer() {
+  if (!SESSION) {
+    show('s-attack-result', '❌ Not logged in — go to the Login tab first', 'err');
+    return;
+  }
+  // Attacker sends request without the CSRF token
+  const forgedToken = null;
+  if (forgedToken !== SESSION.csrfToken) {
+    show('s-attack-result',
+      '🛡️ BLOCKED (403): Invalid or missing CSRF token — request rejected\n\nThe attacker cannot read the token from the bank page (same-origin policy), so the forgery always fails.',
+      'ok');
+  }
+}
+
+// ── Balance renderers ─────────────────────────────────────────────
+function balanceHtml(containerId) {
+  const b = getBalances();
+  const el = document.getElementById(containerId);
+  el.innerHTML = Object.entries(b).map(([name, amt]) => `
+    <div class="balance-card">
+      <span class="name">${name}</span>
+      <span class="amount">$${amt}</span>
+    </div>`).join('');
+}
+
+function renderAllBalances() { balanceHtml('setup-balances'); }
+function renderVBalances()   { balanceHtml('v-balances'); }
+function renderSBalances()   { balanceHtml('s-balances'); }
+
+function resetBalances() {
+  saveBalances({ ...DEFAULT_BALANCES });
+  renderAllBalances(); renderVBalances(); renderSBalances();
+  const msg = document.getElementById('reset-msg');
+  msg.style.display = 'inline';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+
+// ── UI helpers ────────────────────────────────────────────────────
+function show(id, text, type) {
+  const el = document.getElementById(id);
+  el.className = 'output ' + (type||'');
+  el.style.display = 'block';
+  el.textContent = text;
+}
+
+function switchTab(btn, name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  renderAllBalances(); renderVBalances(); renderSBalances();
+}
+
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+renderAllBalances();
+</script>
+</body>
+</html>

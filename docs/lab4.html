@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lab 4 – Password Storage</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <span class="logo">&#128737; CyberTraining</span>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="lab1.html">SQL Injection</a>
+    <a href="lab2.html">XSS</a>
+    <a href="lab3.html">CSRF</a>
+    <a href="lab4.html" class="active">Passwords</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Lab 4</div>
+
+  <div class="page-header">
+    <div class="tag" style="color:var(--success)">Lab 4 — Password Storage</div>
+    <h1>Storing Passwords Safely</h1>
+    <p>Plain-text passwords in a database mean one breach exposes every account. Hashing converts passwords into an irreversible fingerprint so a stolen database is useless.</p>
+  </div>
+
+  <div class="callout callout-blue">
+    <strong>&#128218; How hashing works</strong>
+    A hash function transforms any input into a fixed-length string. The same input always produces the same hash, but you <strong>cannot reverse</strong> a hash to its original value. To verify a login you hash the attempt and compare it to the stored hash.
+  </div>
+
+  <div id="bcrypt-loading" class="callout callout-blue" style="display:none">
+    <strong>&#9203; Loading bcrypt library…</strong> Fetching from CDN — requires internet access.
+  </div>
+  <div id="bcrypt-error" class="callout callout-red" style="display:none">
+    <strong>&#9888; bcrypt CDN failed to load.</strong> Check your internet connection and reload the page.
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'leak')">&#128565; DB Leak Simulator</button>
+    <button class="tab-btn" onclick="switchTab(this,'register')">&#128100; Register</button>
+    <button class="tab-btn" onclick="switchTab(this,'login')">&#128274; Login</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+  </div>
+
+  <!-- LEAK TAB -->
+  <div id="tab-leak" class="tab-pane active">
+    <div class="callout callout-red">
+      <strong>&#128565; Simulate a database breach</strong>
+      Click below to "leak" both databases and see what an attacker gets.
+    </div>
+
+    <div class="cols">
+      <div class="panel danger">
+        <h3>Vulnerable DB <span class="pill pill-vuln">PLAIN TEXT</span></h3>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Passwords stored exactly as users typed them.</p>
+        <button class="btn btn-danger" onclick="leakVuln()">&#128565; Leak vulnerable database</button>
+        <div id="vuln-leak" style="margin-top:1rem"></div>
+      </div>
+
+      <div class="panel success">
+        <h3>Secure DB <span class="pill pill-safe">BCRYPT</span></h3>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Only bcrypt hashes stored — originals unrecoverable.</p>
+        <button class="btn btn-success" onclick="leakSecure()">&#128274; Leak secure database</button>
+        <div id="secure-leak" style="margin-top:1rem"></div>
+      </div>
+    </div>
+
+    <div class="panel warn">
+      <h3>&#128270; What an attacker does next</h3>
+      <div style="font-size:.88rem;color:var(--muted);line-height:1.8">
+        <p><strong style="color:var(--text)">With plain-text:</strong> Instantly knows every password. Can log in to every account. Tries each password on Gmail, Twitter, banking sites (password reuse is very common).</p>
+        <br>
+        <p><strong style="color:var(--text)">With bcrypt hashes:</strong> Must brute-force each hash individually. bcrypt is intentionally slow (~100 ms per attempt on modern hardware). A 12-character random password would take billions of years. Weak passwords like <code>123456</code> may still be cracked — which is why bcrypt includes a random <strong>salt</strong> per password, defeating precomputed rainbow tables.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER TAB -->
+  <div id="tab-register" class="tab-pane">
+    <div class="cols">
+      <div class="panel danger">
+        <h3>Register <span class="pill pill-vuln">PLAIN TEXT</span></h3>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Password stored exactly as entered.</p>
+        <div class="form-group">
+          <label>Username</label>
+          <input id="vr-user" type="text" placeholder="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="vr-pass" type="text" placeholder="any password">
+        </div>
+        <button class="btn btn-danger" onclick="vulnRegister()">Register (unsafe)</button>
+        <div id="vr-result" class="output hidden"></div>
+
+        <div class="panel" style="background:var(--code-bg);margin-top:1rem;padding:.75rem">
+          <pre style="font-size:.78rem">// ❌ Plain text
+users.push({ username, password })
+// stored: "MyPassword123"</pre>
+        </div>
+      </div>
+
+      <div class="panel success">
+        <h3>Register <span class="pill pill-safe">BCRYPT</span></h3>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Password hashed with bcrypt (cost 10) before storage.</p>
+        <div class="form-group">
+          <label>Username</label>
+          <input id="sr-user" type="text" placeholder="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="sr-pass" type="text" placeholder="any password">
+        </div>
+        <button class="btn btn-success" id="sr-btn" onclick="secureRegister()">Register (safe)</button>
+        <p style="font-size:.8rem;color:var(--muted);margin-top:.4rem">Note: bcrypt takes ~100 ms intentionally — this delay is the protection.</p>
+        <div id="sr-result" class="output hidden"></div>
+
+        <div class="panel" style="background:var(--code-bg);margin-top:1rem;padding:.75rem">
+          <pre style="font-size:.78rem">// ✅ bcrypt hash (cost factor 10)
+const hash = await bcrypt.hash(password, 10)
+users.push({ username, passwordHash: hash })
+// stored: "$2a$10$..."</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN TAB -->
+  <div id="tab-login" class="tab-pane">
+    <div class="callout callout-blue">
+      <strong>Pre-seeded accounts (both databases)</strong>
+      <code>alice / password1</code> &nbsp;·&nbsp; <code>admin / admin123</code>
+    </div>
+
+    <div class="cols">
+      <div class="panel danger">
+        <h3>Login <span class="pill pill-vuln">PLAIN TEXT comparison</span></h3>
+        <div class="form-group">
+          <label>Username</label>
+          <input id="vl-user" type="text" value="alice">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="vl-pass" type="text" value="password1">
+        </div>
+        <button class="btn btn-danger" onclick="vulnLogin()">Login</button>
+        <div id="vl-result" class="output hidden"></div>
+
+        <div class="panel" style="background:var(--code-bg);margin-top:1rem;padding:.75rem">
+          <pre style="font-size:.78rem">// ❌ Direct string comparison
+const user = users.find(
+  u => u.username === username
+    && u.password === password
+)</pre>
+        </div>
+      </div>
+
+      <div class="panel success">
+        <h3>Login <span class="pill pill-safe">bcrypt.compare</span></h3>
+        <div class="form-group">
+          <label>Username</label>
+          <input id="sl-user" type="text" value="alice">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input id="sl-pass" type="text" value="password1">
+        </div>
+        <button class="btn btn-success" id="sl-btn" onclick="secureLogin()">Login</button>
+        <div id="sl-result" class="output hidden"></div>
+
+        <div class="panel" style="background:var(--code-bg);margin-top:1rem;padding:.75rem">
+          <pre style="font-size:.78rem">// ✅ Hash the attempt, compare
+const user = users.find(
+  u => u.username === username
+)
+const ok = await bcrypt.compare(
+  password,          // attempt
+  user.passwordHash  // stored hash
+)</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPLANATION TAB -->
+  <div id="tab-explain" class="tab-pane">
+    <div class="panel">
+      <h3>&#128218; Why plain text is catastrophic</h3>
+      <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
+        <p>Databases get breached — it happens to large companies regularly. If you store passwords as plain text:</p>
+        <ul style="margin-left:1.2rem;margin-top:.5rem">
+          <li>Every user's password is immediately readable</li>
+          <li>~60% of users reuse passwords — attacker tries them on email, banks, social media</li>
+          <li>You face legal liability for the breach</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>&#128218; Why bcrypt, not MD5 or SHA-256</h3>
+      <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
+        <p><strong style="color:var(--text)">MD5 / SHA-256 are fast</strong> — designed for checksums. A GPU can compute billions per second, making brute-force trivial.</p>
+        <br>
+        <p><strong style="color:var(--text)">bcrypt is slow by design</strong> — cost factor 10 means 2¹⁰ = 1024 rounds per hash. ~100 ms per attempt. Fast enough for login, devastating for brute-force (≈10 attempts/sec vs billions).</p>
+        <br>
+        <p><strong style="color:var(--text)">bcrypt includes a salt</strong> — a random value mixed into every hash. Two identical passwords produce completely different hashes, defeating rainbow tables.</p>
+        <br>
+        <p><strong style="color:var(--text)">Alternatives:</strong> Argon2id (recommended for new systems), scrypt. All share: slow + salted.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>&#127937; Challenge: anatomy of a bcrypt hash</h3>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Register a user in the secure tab, then leak the secure database. Decode the hash: what do the different parts mean?</p>
+      <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show answer</button>
+      <div id="h1" class="hint-box">
+        Example: <code>$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy</code><br><br>
+        <code>$2a$</code> — bcrypt algorithm version<br>
+        <code>$10$</code> — cost factor (2¹⁰ rounds)<br>
+        next 22 chars — random <strong>salt</strong><br>
+        remaining chars — the actual <strong>hash</strong><br><br>
+        The salt is stored inside the hash string, so <code>bcrypt.compare()</code> can extract it and rehash the attempt the same way.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- bcryptjs from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+<script>
+// ── Check bcrypt loaded ───────────────────────────────────────────
+if (typeof dcodeIO === 'undefined' && typeof bcrypt === 'undefined') {
+  document.getElementById('bcrypt-error').style.display = 'block';
+}
+function getBcrypt() {
+  // jsdelivr exposes it as dcodeIO.bcrypt or as window.bcrypt depending on version
+  return window.dcodeIO?.bcrypt || window.bcrypt;
+}
+
+// ── In-memory databases (seeded + localStorage extras) ───────────
+const SEED_VULN = [
+  { username:'admin', password:'admin123',  email:'admin@bank.com' },
+  { username:'alice', password:'password1', email:'alice@example.com' },
+  { username:'bob',   password:'hunter2',   email:'bob@example.com' },
+];
+
+// Secure DB stores bcrypt hashes — we pre-compute them at load time
+let SECURE_DB = null;
+
+async function initSecureDb() {
+  const stored = localStorage.getItem('pw_secure_db');
+  if (stored) { SECURE_DB = JSON.parse(stored); return; }
+  const bc = getBcrypt();
+  if (!bc) return;
+  SECURE_DB = await Promise.all(SEED_VULN.map(async u => ({
+    username: u.username,
+    passwordHash: await bc.hash(u.password, 10),
+    email: u.email
+  })));
+  localStorage.setItem('pw_secure_db', JSON.stringify(SECURE_DB));
+}
+
+function getVulnDb() {
+  const stored = localStorage.getItem('pw_vuln_db');
+  return stored ? JSON.parse(stored) : [...SEED_VULN];
+}
+
+function saveVulnDb(db) { localStorage.setItem('pw_vuln_db', JSON.stringify(db)); }
+
+// ── Leak ──────────────────────────────────────────────────────────
+function leakVuln() {
+  const db = getVulnDb();
+  const el = document.getElementById('vuln-leak');
+  el.innerHTML = '<p style="color:var(--danger);font-size:.85rem;margin-bottom:.5rem">⚠️ All passwords exposed as plain text!</p>';
+  db.forEach(u => {
+    el.innerHTML += `<div class="hash-row">
+      <div class="label">${u.username} (${u.email})</div>
+      <div class="value" style="color:var(--danger)">${u.password}</div>
+    </div>`;
+  });
+}
+
+async function leakSecure() {
+  const el = document.getElementById('secure-leak');
+  if (!SECURE_DB) {
+    el.innerHTML = '<p style="color:var(--warn);font-size:.85rem">⏳ Initialising hashes… try again in a moment.</p>';
+    await initSecureDb();
+  }
+  if (!SECURE_DB) { el.innerHTML = '<p style="color:var(--danger)">bcrypt not loaded</p>'; return; }
+  el.innerHTML = '<p style="color:var(--success);font-size:.85rem;margin-bottom:.5rem">🔒 Only hashes stored — originals unrecoverable</p>';
+  SECURE_DB.forEach(u => {
+    el.innerHTML += `<div class="hash-row">
+      <div class="label">${u.username} (${u.email})</div>
+      <div class="value">${u.passwordHash}</div>
+    </div>`;
+  });
+}
+
+// ── Register ──────────────────────────────────────────────────────
+function vulnRegister() {
+  const username = document.getElementById('vr-user').value.trim();
+  const password = document.getElementById('vr-pass').value;
+  if (!username || !password) return;
+  const db = getVulnDb();
+  if (db.find(u => u.username === username)) {
+    showOut('vr-result', '❌ Username already taken', 'err'); return;
+  }
+  db.unshift({ username, password, email: '' });
+  saveVulnDb(db);
+  showOut('vr-result', `⚠️ Registered! Stored as plain text:\n"${password}"`, 'warn');
+}
+
+async function secureRegister() {
+  const username = document.getElementById('sr-user').value.trim();
+  const password = document.getElementById('sr-pass').value;
+  if (!username || !password) return;
+  const bc = getBcrypt();
+  if (!bc) { showOut('sr-result', '❌ bcrypt not loaded', 'err'); return; }
+  if (!SECURE_DB) await initSecureDb();
+  if (SECURE_DB.find(u => u.username === username)) {
+    showOut('sr-result', '❌ Username already taken', 'err'); return;
+  }
+
+  const btn = document.getElementById('sr-btn');
+  btn.textContent = 'Hashing… (~100ms)';
+  btn.disabled = true;
+
+  const hash = await bc.hash(password, 10);
+  SECURE_DB.unshift({ username, passwordHash: hash, email: '' });
+  localStorage.setItem('pw_secure_db', JSON.stringify(SECURE_DB));
+
+  btn.textContent = 'Register (safe)';
+  btn.disabled = false;
+  showOut('sr-result', `✅ Registered! Stored as bcrypt hash:\n${hash}`, 'ok');
+}
+
+// ── Login ─────────────────────────────────────────────────────────
+function vulnLogin() {
+  const username = document.getElementById('vl-user').value.trim();
+  const password = document.getElementById('vl-pass').value;
+  const db = getVulnDb();
+  const user = db.find(u => u.username === username && u.password === password);
+  showOut('vl-result', user ? `✅ Logged in as ${username}` : '❌ Invalid credentials', user ? 'ok' : 'err');
+}
+
+async function secureLogin() {
+  const username = document.getElementById('sl-user').value.trim();
+  const password = document.getElementById('sl-pass').value;
+  const bc = getBcrypt();
+  if (!bc) { showOut('sl-result', '❌ bcrypt not loaded', 'err'); return; }
+  if (!SECURE_DB) await initSecureDb();
+
+  const btn = document.getElementById('sl-btn');
+  btn.textContent = 'Checking…';
+  btn.disabled = true;
+
+  const user = SECURE_DB.find(u => u.username === username);
+  const ok = user && await bc.compare(password, user.passwordHash);
+
+  btn.textContent = 'Login';
+  btn.disabled = false;
+  showOut('sl-result', ok ? `✅ Logged in as ${username}` : '❌ Invalid credentials', ok ? 'ok' : 'err');
+}
+
+// ── UI helpers ────────────────────────────────────────────────────
+function showOut(id, text, type) {
+  const el = document.getElementById(id);
+  el.className = 'output ' + (type||'');
+  el.style.display = 'block';
+  el.textContent = text;
+}
+
+function switchTab(btn, name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+// Initialise secure DB in background on load
+initSecureDb();
+</script>
+</body>
+</html>

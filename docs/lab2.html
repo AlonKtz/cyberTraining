@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lab 2 – XSS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <span class="logo">&#128737; CyberTraining</span>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="lab1.html">SQL Injection</a>
+    <a href="lab2.html" class="active">XSS</a>
+    <a href="lab3.html">CSRF</a>
+    <a href="lab4.html">Passwords</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Lab 2</div>
+
+  <div class="page-header">
+    <div class="tag" style="color:var(--warn)">Lab 2 — Cross-Site Scripting</div>
+    <h1>XSS (Cross-Site Scripting)</h1>
+    <p>An attacker injects JavaScript into your site. Other users load the page and the script runs in their browser — stealing cookies, redirecting them, or defacing the page.</p>
+  </div>
+
+  <div class="callout callout-blue">
+    <strong>&#128218; How it works</strong>
+    If a comment is stored as-is and rendered with <code>innerHTML</code>, any HTML/JS inside it executes. A payload like <code>&lt;img src=x onerror="alert(document.cookie)"&gt;</code> runs the moment the page loads.
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'vuln')">&#9888; Vulnerable</button>
+    <button class="tab-btn" onclick="switchTab(this,'secure')">&#9989; Secure</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+  </div>
+
+  <!-- VULNERABLE TAB -->
+  <div id="tab-vuln" class="tab-pane active">
+    <div class="callout callout-red">
+      <strong>&#9888; Vulnerable comment board</strong>
+      Comments are rendered with <code>innerHTML</code> — any HTML or script you post will execute for every visitor.
+    </div>
+
+    <div class="cols">
+      <div class="panel danger">
+        <h3>Post a Comment <span class="pill pill-vuln">VULNERABLE</span></h3>
+        <div class="form-group">
+          <label>Name</label>
+          <input id="v-author" type="text" value="hacker" placeholder="your name">
+        </div>
+        <div class="form-group">
+          <label>Comment</label>
+          <textarea id="v-body" placeholder="try an XSS payload here…"></textarea>
+        </div>
+        <button class="btn btn-danger" onclick="postVulnComment()">Post Comment</button>
+
+        <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show payloads</button>
+        <div id="h1" class="hint-box">
+          Basic alert:<br>
+          <code>&lt;script&gt;alert('XSS!')&lt;/script&gt;</code><br><br>
+          Image error handler (bypasses many filters):<br>
+          <code>&lt;img src=x onerror="alert('cookie: '+document.cookie)"&gt;</code><br><br>
+          Page defacement:<br>
+          <code>&lt;script&gt;document.body.style.background='red';document.body.innerHTML='&lt;h1&gt;HACKED&lt;/h1&gt;'&lt;/script&gt;</code><br><br>
+          Bold tag (harmless but shows HTML executes):<br>
+          <code>&lt;b style="color:red"&gt;I am bold HTML&lt;/b&gt;</code>
+        </div>
+      </div>
+
+      <div class="panel" style="background:var(--code-bg)">
+        <h3>Code (vulnerable)</h3>
+        <pre>// ❌ Stored as raw HTML
+comments.push({ author, body })
+
+// ❌ Rendered with innerHTML
+div.innerHTML = `
+  &lt;div class="meta"&gt;${comment.author}&lt;/div&gt;
+  &lt;div class="body"&gt;${comment.body}&lt;/div&gt;
+`
+// Any &lt;script&gt; or event handler executes!</pre>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <h3 style="font-size:1rem">Live comment board</h3>
+        <button class="btn btn-ghost btn-sm" onclick="loadVulnComments()">&#8635; Refresh</button>
+      </div>
+      <div id="v-comments"></div>
+    </div>
+  </div>
+
+  <!-- SECURE TAB -->
+  <div id="tab-secure" class="tab-pane">
+    <div class="callout callout-green">
+      <strong>&#9989; Secure comment board</strong>
+      HTML special characters are escaped before storage. Scripts become inert text.
+    </div>
+
+    <div class="cols">
+      <div class="panel success">
+        <h3>Post a Comment <span class="pill pill-safe">SECURE</span></h3>
+        <div class="form-group">
+          <label>Name</label>
+          <input id="s-author" type="text" value="hacker" placeholder="your name">
+        </div>
+        <div class="form-group">
+          <label>Comment</label>
+          <textarea id="s-body" placeholder="try the same XSS payload — it will render as text"></textarea>
+        </div>
+        <button class="btn btn-success" onclick="postSecureComment()">Post Comment</button>
+        <p style="margin-top:.75rem;font-size:.83rem;color:var(--muted)">Try <code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code> — it will appear as literal text.</p>
+      </div>
+
+      <div class="panel" style="background:var(--code-bg)">
+        <h3>Code (secure)</h3>
+        <pre>// ✅ Escape HTML entities before storing
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;amp;')
+    .replace(/&lt;/g, '&amp;lt;')
+    .replace(/&gt;/g, '&amp;gt;')
+    .replace(/"/g, '&amp;quot;')
+    .replace(/'/g, '&amp;#x27;')
+}
+
+comments.push({
+  author: escapeHtml(author),
+  body:   escapeHtml(body)
+})
+
+// ✅ Or use textContent — never innerHTML
+el.textContent = comment.body</pre>
+      </div>
+    </div>
+
+    <div style="margin-top:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <h3 style="font-size:1rem">Secure comment board</h3>
+        <button class="btn btn-ghost btn-sm" onclick="loadSecureComments()">&#8635; Refresh</button>
+      </div>
+      <div id="s-comments"></div>
+    </div>
+  </div>
+
+  <!-- EXPLANATION TAB -->
+  <div id="tab-explain" class="tab-pane">
+    <div class="panel">
+      <h3>&#128218; Full Explanation</h3>
+      <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
+        <p><strong style="color:var(--text)">Root cause:</strong> User input is reflected back to the browser without escaping. The browser's HTML parser treats it as markup and executes any script it finds.</p>
+        <br>
+        <p><strong style="color:var(--text)">Types of XSS:</strong></p>
+        <ul style="margin-left:1.2rem;margin-top:.3rem">
+          <li><strong style="color:var(--text)">Stored XSS</strong> — payload saved to DB, served to every visitor (this lab).</li>
+          <li><strong style="color:var(--text)">Reflected XSS</strong> — payload in a URL parameter, echoed in the same response.</li>
+          <li><strong style="color:var(--text)">DOM XSS</strong> — JS on the page reads attacker data and writes it to the DOM.</li>
+        </ul>
+        <br>
+        <p><strong style="color:var(--text)">What attackers do with XSS:</strong> Steal session cookies (<code>document.cookie</code>), keylog passwords, redirect to phishing pages, deface the page, exfiltrate data silently.</p>
+        <br>
+        <p><strong style="color:var(--text)">Fixes:</strong></p>
+        <ul style="margin-left:1.2rem;margin-top:.3rem">
+          <li>Escape HTML entities in all user-supplied output.</li>
+          <li>Use <code>textContent</code> instead of <code>innerHTML</code> where HTML isn't needed.</li>
+          <li>Content Security Policy (CSP) header blocks inline scripts as a second layer.</li>
+          <li>Use DOMPurify when you genuinely need to allow some HTML.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>&#127937; Challenge: cookie theft simulation</h3>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Post a payload to the vulnerable board that reads <code>document.cookie</code> and shows it in an alert. Then explain why <code>HttpOnly</code> cookies would mitigate this.</p>
+      <button class="hint-toggle" onclick="toggleHint('h2')">&#128161; Show answer</button>
+      <div id="h2" class="hint-box">
+        Payload: <code>&lt;img src=x onerror="alert('Stolen: '+document.cookie)"&gt;</code><br><br>
+        HttpOnly cookies cannot be read by JavaScript at all — <code>document.cookie</code> won't include them. Even with XSS, the attacker can't steal the session token if it has the HttpOnly flag.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── localStorage-backed comment store ─────────────────────────────
+const SEED = [
+  { author:'alice', body:'Great tutorial!' },
+  { author:'bob',   body:'Very helpful, thanks!' },
+];
+
+function loadComments(key) {
+  const stored = localStorage.getItem(key);
+  if (stored) return JSON.parse(stored);
+  localStorage.setItem(key, JSON.stringify(SEED));
+  return [...SEED];
+}
+
+function saveComment(key, author, body) {
+  const list = loadComments(key);
+  list.unshift({ author, body });
+  localStorage.setItem(key, JSON.stringify(list));
+}
+
+// ── Vulnerable board ──────────────────────────────────────────────
+function postVulnComment() {
+  const author = document.getElementById('v-author').value.trim() || 'anon';
+  const body   = document.getElementById('v-body').value;
+  if (!body) return;
+  saveComment('lab_vuln_comments', author, body);
+  document.getElementById('v-body').value = '';
+  loadVulnComments();
+}
+
+function loadVulnComments() {
+  const list = loadComments('lab_vuln_comments');
+  const container = document.getElementById('v-comments');
+  container.innerHTML = '';
+  list.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'comment';
+    // ❌ innerHTML — any script in author/body executes
+    div.innerHTML = `<div class="meta">${c.author}</div><div class="body">${c.body}</div>`;
+    container.appendChild(div);
+  });
+}
+
+// ── Secure board ──────────────────────────────────────────────────
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function postSecureComment() {
+  const author = document.getElementById('s-author').value.trim() || 'anon';
+  const body   = document.getElementById('s-body').value;
+  if (!body) return;
+  saveComment('lab_secure_comments', escapeHtml(author), escapeHtml(body));
+  document.getElementById('s-body').value = '';
+  loadSecureComments();
+}
+
+function loadSecureComments() {
+  const list = loadComments('lab_secure_comments');
+  const container = document.getElementById('s-comments');
+  container.innerHTML = '';
+  list.forEach(c => {
+    const div  = document.createElement('div');
+    div.className = 'comment';
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    // ✅ textContent — scripts are inert text
+    meta.textContent = c.author;
+    const body = document.createElement('div');
+    body.className = 'body';
+    body.textContent = c.body;
+    div.appendChild(meta);
+    div.appendChild(body);
+    container.appendChild(div);
+  });
+}
+
+// ── UI helpers ────────────────────────────────────────────────────
+function switchTab(btn, name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'vuln')   loadVulnComments();
+  if (name === 'secure') loadSecureComments();
+}
+
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+loadVulnComments();
+</script>
+</body>
+</html>

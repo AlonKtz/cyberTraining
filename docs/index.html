@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyber Training Lab</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <span class="logo">&#128737; CyberTraining</span>
+  <div class="nav-links">
+    <a href="index.html" class="active">Home</a>
+    <a href="lab1.html">SQL Injection</a>
+    <a href="lab2.html">XSS</a>
+    <a href="lab3.html">CSRF</a>
+    <a href="lab4.html">Passwords</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="hero">
+    <h1>Web Security Training</h1>
+    <p>Interactive labs for SQL Injection, XSS, CSRF, and Password Storage. Practice attacks on vulnerable endpoints, then see how to fix them.</p>
+  </div>
+
+  <div class="callout callout-blue">
+    <strong>&#128161; How to use these labs</strong>
+    Each lab has two sides: a <strong>Vulnerable</strong> panel where you can practise the attack, and a <strong>Secure</strong> panel showing the correct implementation. Everything runs in your browser — no server required.
+  </div>
+
+  <div class="lab-grid">
+    <a class="lab-card" href="lab1.html">
+      <div class="badge badge-red">Lab 1</div>
+      <h3>SQL Injection</h3>
+      <p>Bypass login with crafted SQL. Learn why string concatenation is dangerous and how parameterized queries fix it.</p>
+    </a>
+    <a class="lab-card" href="lab2.html">
+      <div class="badge badge-orange">Lab 2</div>
+      <h3>Cross-Site Scripting</h3>
+      <p>Inject JavaScript into a comment board. See how unsanitized output leads to script execution and how escaping stops it.</p>
+    </a>
+    <a class="lab-card" href="lab3.html">
+      <div class="badge badge-blue">Lab 3</div>
+      <h3>CSRF</h3>
+      <p>Simulate a forged bank transfer from a malicious page. Understand how CSRF tokens and origin checks protect users.</p>
+    </a>
+    <a class="lab-card" href="lab4.html">
+      <div class="badge badge-green">Lab 4</div>
+      <h3>Password Storage</h3>
+      <p>Compare plain-text vs bcrypt hashed storage. Trigger a simulated DB leak to see why hashing matters.</p>
+    </a>
+  </div>
+
+  <div style="margin-top:2.5rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+    <h2 style="margin-bottom:1rem;">Key Principle</h2>
+    <div class="callout callout-red">
+      <strong>&#128683; NEVER TRUST USER INPUT</strong>
+      Every vulnerability in these labs traces back to trusting data from the outside world. Validate, sanitize, escape, and parameterize — always.
+    </div>
+  </div>
+
+  <button class="btn btn-ghost btn-sm" style="margin-top:1rem" onclick="resetLabs()">&#8635; Reset all lab data</button>
+  <span id="reset-msg" style="margin-left:.75rem; font-size:.85rem; color:var(--success); display:none;">Reset!</span>
+</div>
+
+<script>
+function resetLabs() {
+  // Clear all lab-related localStorage keys
+  const keys = Object.keys(localStorage).filter(k =>
+    k.startsWith('lab_') || k.startsWith('csrf_') || k.startsWith('pw_')
+  );
+  keys.forEach(k => localStorage.removeItem(k));
+  const msg = document.getElementById('reset-msg');
+  msg.style.display = 'inline';
+  setTimeout(() => msg.style.display = 'none', 2000);
+}
+</script>
+</body>
+</html>
