@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cyber Training Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,6 +23,14 @@
 
 <div class="container">
   <div class="hero">
+    <!-- Mouse-responsive neon entity -->
+    <div class="orb-stage" id="orbStage" aria-hidden="true">
+      <div class="orb-grid"></div>
+      <div class="orb" id="orb">
+        <div class="orb-core"></div>
+        <div class="orb-ring"></div>
+      </div>
+    </div>
     <h1>Web Security Training</h1>
     <p>Interactive labs for SQL Injection, XSS, CSRF, and Password Storage. Practice attacks on vulnerable endpoints, then see how to fix them.</p>
   </div>
@@ -74,6 +86,76 @@ function resetLabs() {
   msg.style.display = 'inline';
   setTimeout(() => msg.style.display = 'none', 2000);
 }
+
+// ── Mouse-responsive neon entity ──────────────────────────────────
+(function () {
+  const stage = document.getElementById('orbStage');
+  const orb = document.getElementById('orb');
+  if (!stage || !orb) return;
+
+  // Respect reduced-motion: render a static, centered orb.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    orb.style.left = '50%';
+    orb.style.top = '50%';
+    return;
+  }
+
+  let stageRect = stage.getBoundingClientRect();
+  // Current + target positions (start centered)
+  let cx = stageRect.width / 2, cy = stageRect.height / 2;
+  let tx = cx, ty = cy;
+  let vx = 0, vy = 0;        // velocity (for reactive squash/scale)
+  let inside = false;
+  let lastMove = performance.now();
+
+  window.addEventListener('resize', () => { stageRect = stage.getBoundingClientRect(); });
+
+  // Track the cursor globally; the entity reacts whenever the pointer is
+  // anywhere near the hero, even directly over the headline text.
+  window.addEventListener('pointermove', (e) => {
+    stageRect = stage.getBoundingClientRect();
+    const x = e.clientX - stageRect.left;
+    const y = e.clientY - stageRect.top;
+    const margin = 160;
+    inside = x > -margin && x < stageRect.width + margin &&
+             y > -margin && y < stageRect.height + margin;
+    if (inside) {
+      // clamp so the entity stays within its stage
+      tx = Math.max(0, Math.min(stageRect.width, x));
+      ty = Math.max(0, Math.min(stageRect.height, y));
+      lastMove = performance.now();
+    }
+  });
+
+  function frame(now) {
+    // When idle/outside, drift gently in a slow figure-eight around center.
+    if (!inside || now - lastMove > 2200) {
+      const t = now / 1000;
+      tx = stageRect.width / 2 + Math.sin(t * 0.7) * stageRect.width * 0.22;
+      ty = stageRect.height / 2 + Math.sin(t * 1.4) * stageRect.height * 0.18;
+    }
+
+    // Ease toward target (lerp) — the "pull" of the entity.
+    const ease = 0.12;
+    const nx = cx + (tx - cx) * ease;
+    const ny = cy + (ty - cy) * ease;
+    vx = nx - cx; vy = ny - cy;
+    cx = nx; cy = ny;
+
+    const speed = Math.min(Math.hypot(vx, vy), 40);
+    const scale = 1 + speed / 90;                 // grows with motion
+    const angle = Math.atan2(vy, vx) * 180 / Math.PI;
+    const stretch = 1 + speed / 220;              // slight comet-stretch
+
+    orb.style.transform =
+      `translate(-50%, -50%) rotate(${angle}deg) scale(${scale * stretch}, ${scale / stretch}) rotate(${-angle}deg)`;
+    orb.style.left = cx + 'px';
+    orb.style.top = cy + 'px';
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>
