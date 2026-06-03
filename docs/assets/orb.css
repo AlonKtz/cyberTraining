@@ -1,0 +1,12 @@
+/* Styles for the signature neon orb (particle sphere). Pair with assets/orb.js. */
+.ct-orb-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ct-orb-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
