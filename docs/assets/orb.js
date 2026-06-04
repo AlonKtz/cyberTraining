@@ -50,17 +50,18 @@
       canvas.width = W * dpr; canvas.height = H * dpr;
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      R = Math.min(W, H) * 0.40;
+      R = Math.min(W, H) * 0.30;
     }
     resize();
     const ro = new ResizeObserver(resize); ro.observe(container);
 
     // ── State ──
     let rotX = -0.25, rotY = 0;     // current rotation
-    let velY = 0.009;               // idle spin — clearly visible
+    let velY = 0.006;               // idle spin — calm
     let targetTiltX = -0.18, targetTiltY = 0;
     let curTiltX = -0.18, curTiltY = 0;
-    let driftX = 0, driftY = 0;     // figure-eight idle offset
+    let driftX = 0, driftY = 0;             // current (eased) offset
+    let targetDriftX = 0, targetDriftY = 0; // where the cloud wants to be
     let hovering = false;
     let pulse = 1;
     const persp = 2.6;
@@ -70,13 +71,13 @@
       const rect = container.getBoundingClientRect();
       const nx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
       const ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
-      targetTiltY = nx * 0.75;
-      targetTiltX = -0.18 + ny * 0.55;
-      // travel across full container — up to ~40% of width/height
-      driftX = nx * W * 0.40;
-      driftY = ny * H * 0.38;
+      targetTiltY = nx * 0.42;
+      targetTiltX = -0.18 + ny * 0.34;
+      // gentle travel — stay compact around the header
+      targetDriftX = nx * W * 0.10;
+      targetDriftY = ny * H * 0.10;
       hovering = true;
-      pulse = 1.16;
+      pulse = 1.10;
     });
     container.addEventListener('pointerleave', () => { hovering = false; });
 
@@ -110,15 +111,18 @@
 
       // ease tilt + idle figure-eight + spin + pulse decay
       if (!hovering) {
-        targetTiltY = Math.sin(t * 0.7) * 0.28;
-        targetTiltX = -0.18 + Math.sin(t * 1.1) * 0.16;
-        driftX = Math.sin(t * 0.7) * W * 0.22;
-        driftY = Math.sin(t * 1.4) * H * 0.18;
+        targetTiltY = Math.sin(t * 0.7) * 0.18;
+        targetTiltX = -0.18 + Math.sin(t * 1.1) * 0.10;
+        targetDriftX = Math.sin(t * 0.7) * W * 0.06;
+        targetDriftY = Math.sin(t * 1.4) * H * 0.05;
       }
-      curTiltX += (targetTiltX - curTiltX) * 0.09;
-      curTiltY += (targetTiltY - curTiltY) * 0.09;
+      // slow easing → calm, smooth response (no instant snapping)
+      curTiltX += (targetTiltX - curTiltX) * 0.04;
+      curTiltY += (targetTiltY - curTiltY) * 0.04;
+      driftX += (targetDriftX - driftX) * 0.04;
+      driftY += (targetDriftY - driftY) * 0.04;
       rotY += velY;
-      pulse += (1 - pulse) * 0.06;
+      pulse += (1 - pulse) * 0.05;
 
       const cx = W / 2 + driftX, cyy = H / 2 + driftY;
 
