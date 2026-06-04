@@ -50,7 +50,7 @@
       canvas.width = W * dpr; canvas.height = H * dpr;
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      R = Math.min(W, H) * 0.30;
+      R = Math.min(W, H) * 0.42;
     }
     resize();
     const ro = new ResizeObserver(resize); ro.observe(container);
@@ -73,9 +73,9 @@
       const ny = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
       targetTiltY = nx * 0.42;
       targetTiltX = -0.18 + ny * 0.34;
-      // gentle travel — stay compact around the header
-      targetDriftX = nx * W * 0.10;
-      targetDriftY = ny * H * 0.10;
+      // gentle travel — roam a wider area, still smooth
+      targetDriftX = nx * W * 0.16;
+      targetDriftY = ny * H * 0.16;
       hovering = true;
       pulse = 1.10;
     });
@@ -113,8 +113,8 @@
       if (!hovering) {
         targetTiltY = Math.sin(t * 0.7) * 0.18;
         targetTiltX = -0.18 + Math.sin(t * 1.1) * 0.10;
-        targetDriftX = Math.sin(t * 0.7) * W * 0.06;
-        targetDriftY = Math.sin(t * 1.4) * H * 0.05;
+        targetDriftX = Math.sin(t * 0.7) * W * 0.10;
+        targetDriftY = Math.sin(t * 1.4) * H * 0.08;
       }
       // slow easing → calm, smooth response (no instant snapping)
       curTiltX += (targetTiltX - curTiltX) * 0.04;

@@ -120,7 +120,7 @@ nav .nav-links a.active { color: var(--t-cyan); }
 nav .nav-links a.active::before { content: "> "; color: var(--t-cyan); }
 
 /* ── Layout ────────────────────────────────────────────────────────────── */
-.container { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 32px 28px 100px; }
+.container { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 16px 28px 100px; }
 
 /* ── Breadcrumb ────────────────────────────────────────────────────────── */
 .breadcrumb { font-size: .78rem; color: var(--t-muted); margin-bottom: 22px; }
@@ -130,9 +130,10 @@ nav .nav-links a.active::before { content: "> "; color: var(--t-cyan); }
 .breadcrumb a:hover { color: var(--t-text); }
 
 /* ── Hero (home) ───────────────────────────────────────────────────────── */
-.hero { padding: 20px 0 36px; text-align: left; position: relative; }
+.hero { padding: 0 0 24px; text-align: left; position: relative; }
 
-.orb-stage { width: 100%; height: 300px; margin: 0 0 8px; position: relative; }
+/* Orb sits high; the headline is pulled up to overlap the stage's empty base */
+.orb-stage { width: 100%; height: 260px; margin: 0 0 -44px; position: relative; }
 
 @keyframes glitch {
   0%,92%,100% { text-shadow: none; transform: none; clip-path: none; }
@@ -146,11 +147,13 @@ nav .nav-links a.active::before { content: "> "; color: var(--t-cyan); }
 @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
 
 .hero h1 {
+  position: relative; z-index: 1;
   font-size: clamp(2.4rem, 5.5vw, 4.4rem);
   font-weight: 700; line-height: 1.05; letter-spacing: -.02em;
   color: var(--t-text); margin-bottom: 14px;
   animation: glitch 7s infinite;
 }
+.hero p { position: relative; z-index: 1; }
 .hero h1 em { color: var(--t-cyan); font-style: normal; }
 .hero h1 .cursor::after,
 .hero h1.cursor::after {
