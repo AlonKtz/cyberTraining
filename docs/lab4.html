@@ -31,28 +31,28 @@
   </div>
 
   <div class="callout callout-blue">
-    <strong>&#128218; How hashing works</strong>
+    <strong><i data-lucide="book-open"></i> How hashing works</strong>
     A hash function transforms any input into a fixed-length string. The same input always produces the same hash, but you <strong>cannot reverse</strong> a hash to its original value. To verify a login you hash the attempt and compare it to the stored hash.
   </div>
 
   <div id="bcrypt-loading" class="callout callout-blue" style="display:none">
-    <strong>&#9203; Loading bcrypt library…</strong> Fetching from CDN — requires internet access.
+    <strong><i data-lucide="loader"></i> Loading bcrypt library…</strong> Fetching from CDN — requires internet access.
   </div>
   <div id="bcrypt-error" class="callout callout-red" style="display:none">
-    <strong>&#9888; bcrypt CDN failed to load.</strong> Check your internet connection and reload the page.
+    <strong><i data-lucide="triangle-alert"></i> bcrypt CDN failed to load.</strong> Check your internet connection and reload the page.
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab(this,'leak')">&#128565; DB Leak Simulator</button>
-    <button class="tab-btn" onclick="switchTab(this,'register')">&#128100; Register</button>
-    <button class="tab-btn" onclick="switchTab(this,'login')">&#128274; Login</button>
-    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+    <button class="tab-btn active" onclick="switchTab(this,'leak')"><i data-lucide="database"></i> DB Leak Simulator</button>
+    <button class="tab-btn" onclick="switchTab(this,'register')"><i data-lucide="user-round"></i> Register</button>
+    <button class="tab-btn" onclick="switchTab(this,'login')"><i data-lucide="lock"></i> Login</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')"><i data-lucide="book-open"></i> Explanation</button>
   </div>
 
   <!-- LEAK TAB -->
   <div id="tab-leak" class="tab-pane active">
     <div class="callout callout-red">
-      <strong>&#128565; Simulate a database breach</strong>
+      <strong><i data-lucide="database"></i> Simulate a database breach</strong>
       Click below to "leak" both databases and see what an attacker gets.
     </div>
 
@@ -60,20 +60,20 @@
       <div class="panel danger">
         <h3>Vulnerable DB <span class="pill pill-vuln">PLAIN TEXT</span></h3>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Passwords stored exactly as users typed them.</p>
-        <button class="btn btn-danger" onclick="leakVuln()">&#128565; Leak vulnerable database</button>
+        <button class="btn btn-danger" onclick="leakVuln()"><i data-lucide="database"></i> Leak vulnerable database</button>
         <div id="vuln-leak" style="margin-top:1rem"></div>
       </div>
 
       <div class="panel success">
         <h3>Secure DB <span class="pill pill-safe">BCRYPT</span></h3>
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:.75rem">Only bcrypt hashes stored — originals unrecoverable.</p>
-        <button class="btn btn-success" onclick="leakSecure()">&#128274; Leak secure database</button>
+        <button class="btn btn-success" onclick="leakSecure()"><i data-lucide="lock"></i> Leak secure database</button>
         <div id="secure-leak" style="margin-top:1rem"></div>
       </div>
     </div>
 
     <div class="panel warn">
-      <h3>&#128270; What an attacker does next</h3>
+      <h3><i data-lucide="search"></i> What an attacker does next</h3>
       <div style="font-size:.88rem;color:var(--muted);line-height:1.8">
         <p><strong style="color:var(--text)">With plain-text:</strong> Instantly knows every password. Can log in to every account. Tries each password on Gmail, Twitter, banking sites (password reuse is very common).</p>
         <br>
@@ -191,7 +191,7 @@ const ok = await bcrypt.compare(
   <!-- EXPLANATION TAB -->
   <div id="tab-explain" class="tab-pane">
     <div class="panel">
-      <h3>&#128218; Why plain text is catastrophic</h3>
+      <h3><i data-lucide="book-open"></i> Why plain text is catastrophic</h3>
       <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
         <p>Databases get breached — it happens to large companies regularly. If you store passwords as plain text:</p>
         <ul style="margin-left:1.2rem;margin-top:.5rem">
@@ -203,7 +203,7 @@ const ok = await bcrypt.compare(
     </div>
 
     <div class="panel">
-      <h3>&#128218; Why bcrypt, not MD5 or SHA-256</h3>
+      <h3><i data-lucide="book-open"></i> Why bcrypt, not MD5 or SHA-256</h3>
       <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
         <p><strong style="color:var(--text)">MD5 / SHA-256 are fast</strong> — designed for checksums. A GPU can compute billions per second, making brute-force trivial.</p>
         <br>
@@ -216,9 +216,9 @@ const ok = await bcrypt.compare(
     </div>
 
     <div class="panel">
-      <h3>&#127937; Challenge: anatomy of a bcrypt hash</h3>
+      <h3><i data-lucide="flag"></i> Challenge: anatomy of a bcrypt hash</h3>
       <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Register a user in the secure tab, then leak the secure database. Decode the hash: what do the different parts mean?</p>
-      <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show answer</button>
+      <button class="hint-toggle" onclick="toggleHint('h1')"><i data-lucide="lightbulb"></i> Show answer</button>
       <div id="h1" class="hint-box">
         Example: <code>$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy</code><br><br>
         <code>$2a$</code> — bcrypt algorithm version<br>
@@ -391,5 +391,7 @@ function toggleHint(id) {
 // Initialise secure DB in background on load
 initSecureDb();
 </script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>

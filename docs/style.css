@@ -396,6 +396,16 @@ pre {
   .lab-card::after { display: none; }
 }
 
+/* ── Lucide line-icons (inherit currentColor, sized to text) ───────────── */
+svg.lucide, i[data-lucide] {
+  width: 1.05em; height: 1.05em;
+  stroke-width: 1.75; vertical-align: -0.15em;
+  display: inline-block; flex: none;
+}
+.btn svg.lucide { width: 14px; height: 14px; vertical-align: middle; }
+.tab-btn svg.lucide { width: 13px; height: 13px; vertical-align: -0.15em; margin-right: 2px; }
+.callout strong svg.lucide { vertical-align: -0.18em; margin-right: 4px; }
+
 /* ── Reduced motion ────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

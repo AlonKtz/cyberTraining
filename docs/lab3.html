@@ -31,15 +31,15 @@
   </div>
 
   <div class="callout callout-blue">
-    <strong>&#128218; How it works</strong>
+    <strong><i data-lucide="book-open"></i> How it works</strong>
     Browsers automatically attach cookies to every request — even those triggered by a page on a different domain. If a malicious site posts a hidden form to your bank's <code>/transfer</code> endpoint while you're logged in, the bank will process it because the session cookie was sent automatically.
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab(this,'setup')">&#128274; Login First</button>
-    <button class="tab-btn" onclick="switchTab(this,'vuln')">&#9888; Vulnerable Attack</button>
-    <button class="tab-btn" onclick="switchTab(this,'secure')">&#9989; Secure</button>
-    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+    <button class="tab-btn active" onclick="switchTab(this,'setup')"><i data-lucide="lock"></i> Login First</button>
+    <button class="tab-btn" onclick="switchTab(this,'vuln')"><i data-lucide="triangle-alert"></i> Vulnerable Attack</button>
+    <button class="tab-btn" onclick="switchTab(this,'secure')"><i data-lucide="shield-check"></i> Secure</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')"><i data-lucide="book-open"></i> Explanation</button>
   </div>
 
   <!-- SETUP TAB -->
@@ -66,12 +66,12 @@
       <div class="panel">
         <h3>Account Balances</h3>
         <div id="setup-balances"></div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderAllBalances()">&#8635; Refresh</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderAllBalances()"><i data-lucide="rotate-ccw"></i> Refresh</button>
       </div>
     </div>
 
     <div class="panel warn">
-      <h3>&#128073; Next steps</h3>
+      <h3><i data-lucide="chevron-right"></i> Next steps</h3>
       <ol style="font-size:.9rem;color:var(--muted);padding-left:1.25rem;line-height:2.2">
         <li>Log in as <strong style="color:var(--text)">alice</strong> above</li>
         <li>Go to <strong style="color:var(--text)">Vulnerable Attack</strong> — click the button to simulate a forged transfer</li>
@@ -84,13 +84,13 @@
   <!-- VULNERABLE TAB -->
   <div id="tab-vuln" class="tab-pane">
     <div class="callout callout-red">
-      <strong>&#9888; Simulated malicious page</strong>
+      <strong><i data-lucide="triangle-alert"></i> Simulated malicious page</strong>
       This box mimics what an attacker at <code>evil.example.com</code> would do. It fires a transfer request using Alice's live session — no CSRF token check exists to stop it.
     </div>
 
     <div class="cols">
       <div class="panel danger" style="border:2px dashed var(--danger)">
-        <h3 style="color:var(--danger)">&#9762; evil.example.com</h3>
+        <h3 style="color:var(--danger)"><i data-lucide="skull"></i> evil.example.com</h3>
         <p style="font-size:.88rem;color:var(--muted);margin-bottom:1rem">You won a prize! Click below to claim it.</p>
 
         <div style="background:var(--code-bg);border-radius:8px;padding:.75rem;font-family:var(--mono);font-size:.8rem;margin-bottom:1rem;color:var(--muted)">
@@ -102,7 +102,7 @@
           &lt;script&gt;document.forms[0].submit()&lt;/script&gt;
         </div>
 
-        <button class="btn btn-danger" onclick="vulnTransfer()">&#127873; Claim Your Prize (Attack!)</button>
+        <button class="btn btn-danger" onclick="vulnTransfer()"><i data-lucide="gift"></i> Claim Your Prize (Attack!)</button>
         <div id="v-attack-result" class="output hidden"></div>
       </div>
 
@@ -121,7 +121,7 @@ function transfer(req) {
         <div class="panel">
           <h3>Balances after attack</h3>
           <div id="v-balances"></div>
-          <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderVBalances()">&#8635; Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderVBalances()"><i data-lucide="rotate-ccw"></i> Refresh</button>
         </div>
       </div>
     </div>
@@ -130,7 +130,7 @@ function transfer(req) {
   <!-- SECURE TAB -->
   <div id="tab-secure" class="tab-pane">
     <div class="callout callout-green">
-      <strong>&#9989; CSRF token protection</strong>
+      <strong><i data-lucide="shield-check"></i> CSRF token protection</strong>
       The secure endpoint requires a secret token issued only to the legitimate page. A forged cross-site request can never include it (same-origin policy blocks reading it).
     </div>
 
@@ -151,7 +151,7 @@ function transfer(req) {
 
         <hr style="border-color:var(--border);margin:1rem 0">
         <p style="font-size:.85rem;color:var(--muted);margin-bottom:.5rem">Now simulate the forged attack on the protected endpoint:</p>
-        <button class="btn btn-danger btn-sm" onclick="forgedTransfer()">&#9762; Forged request (no token)</button>
+        <button class="btn btn-danger btn-sm" onclick="forgedTransfer()"><i data-lucide="skull"></i> Forged request (no token)</button>
         <div id="s-attack-result" class="output hidden"></div>
       </div>
 
@@ -175,7 +175,7 @@ function transfer(req) {
         <div class="panel">
           <h3>Balances</h3>
           <div id="s-balances"></div>
-          <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderSBalances()">&#8635; Refresh</button>
+          <button class="btn btn-ghost btn-sm" style="margin-top:.75rem" onclick="renderSBalances()"><i data-lucide="rotate-ccw"></i> Refresh</button>
         </div>
       </div>
     </div>
@@ -184,7 +184,7 @@ function transfer(req) {
   <!-- EXPLANATION TAB -->
   <div id="tab-explain" class="tab-pane">
     <div class="panel">
-      <h3>&#128218; Full Explanation</h3>
+      <h3><i data-lucide="book-open"></i> Full Explanation</h3>
       <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
         <p><strong style="color:var(--text)">Root cause:</strong> Browsers automatically attach cookies to every request to a domain, regardless of where the request originates. An attacker's page can submit a form to your site and your server can't tell if it came from your UI or theirs.</p>
         <br>
@@ -196,9 +196,9 @@ function transfer(req) {
       </div>
     </div>
     <div class="panel">
-      <h3>&#127937; Challenge</h3>
+      <h3><i data-lucide="flag"></i> Challenge</h3>
       <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Why can't the attacker just read Alice's CSRF token from the bank's page and include it in the forged form?</p>
-      <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show answer</button>
+      <button class="hint-toggle" onclick="toggleHint('h1')"><i data-lucide="lightbulb"></i> Show answer</button>
       <div id="h1" class="hint-box">
         The <strong>Same-Origin Policy</strong> prevents JavaScript on <code>evil.example.com</code> from reading content from <code>bank.example.com</code>. The attacker's page can <em>send</em> requests but can't <em>read</em> the response — so it can never retrieve the token.
       </div>
@@ -206,7 +206,7 @@ function transfer(req) {
   </div>
 
   <div style="margin-top:1.5rem">
-    <button class="btn btn-ghost btn-sm" onclick="resetBalances()">&#8635; Reset balances</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetBalances()"><i data-lucide="rotate-ccw"></i> Reset balances</button>
     <span id="reset-msg" style="margin-left:.75rem;font-size:.85rem;color:var(--success);display:none">Reset!</span>
   </div>
 </div>
@@ -359,5 +359,7 @@ function toggleHint(id) {
 
 renderAllBalances();
 </script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>

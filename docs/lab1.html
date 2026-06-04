@@ -31,22 +31,22 @@
   </div>
 
   <div class="callout callout-blue">
-    <strong>&#128218; How it works</strong>
+    <strong><i data-lucide="book-open"></i> How it works</strong>
     When a login query is built like:<br>
     <code style="font-family:var(--mono)">"SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'"</code><br><br>
     …an attacker can type <code style="font-family:var(--mono)">' OR '1'='1</code> as the password and the resulting SQL becomes always-true, bypassing authentication entirely.
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab(this,'vuln')">&#9888; Vulnerable</button>
-    <button class="tab-btn" onclick="switchTab(this,'secure')">&#9989; Secure</button>
-    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+    <button class="tab-btn active" onclick="switchTab(this,'vuln')"><i data-lucide="triangle-alert"></i> Vulnerable</button>
+    <button class="tab-btn" onclick="switchTab(this,'secure')"><i data-lucide="shield-check"></i> Secure</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')"><i data-lucide="book-open"></i> Explanation</button>
   </div>
 
   <!-- VULNERABLE TAB -->
   <div id="tab-vuln" class="tab-pane active">
     <div class="callout callout-red">
-      <strong>&#9888; Vulnerable login</strong>
+      <strong><i data-lucide="triangle-alert"></i> Vulnerable login</strong>
       This builds its SQL query using string concatenation. The database executes whatever you inject.
     </div>
 
@@ -63,7 +63,7 @@
         </div>
         <button class="btn btn-danger" onclick="vulnLogin()">Attempt Login</button>
 
-        <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show hint</button>
+        <button class="hint-toggle" onclick="toggleHint('h1')"><i data-lucide="lightbulb"></i> Show hint</button>
         <div id="h1" class="hint-box">
           Try these as the password:<br><br>
           <code>' OR '1'='1</code><br>
@@ -102,7 +102,7 @@ WHERE username = 'admin'
   <!-- SECURE TAB -->
   <div id="tab-secure" class="tab-pane">
     <div class="callout callout-green">
-      <strong>&#9989; Secure login</strong>
+      <strong><i data-lucide="shield-check"></i> Secure login</strong>
       Uses a parameterized query. The <code>?</code> placeholder is always treated as data — never as SQL code.
     </div>
 
@@ -145,7 +145,7 @@ if (user && user.password === password) {
   <!-- EXPLANATION TAB -->
   <div id="tab-explain" class="tab-pane">
     <div class="panel">
-      <h3>&#128218; Full Explanation</h3>
+      <h3><i data-lucide="book-open"></i> Full Explanation</h3>
       <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
         <p><strong style="color:var(--text)">Root cause:</strong> The server builds SQL by gluing user input directly into the query string. The database engine has no way to tell what is "data" vs what is "command".</p>
         <br>
@@ -160,9 +160,9 @@ if (user && user.password === password) {
     </div>
 
     <div class="panel">
-      <h3>&#127937; Challenge: dump all users</h3>
+      <h3><i data-lucide="flag"></i> Challenge: dump all users</h3>
       <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Using the vulnerable login, craft a username payload that returns every row in the users table. Hint: use <code>--</code> to comment out the AND clause.</p>
-      <button class="hint-toggle" onclick="toggleHint('h2')">&#128161; Show solution</button>
+      <button class="hint-toggle" onclick="toggleHint('h2')"><i data-lucide="lightbulb"></i> Show solution</button>
       <div id="h2" class="hint-box">
         Username: <code>' OR 1=1--</code> &nbsp; Password: (anything)<br><br>
         Resulting query:<br>
@@ -330,5 +330,7 @@ function toggleHint(id) {
   el.style.display = el.style.display === 'block' ? 'none' : 'block';
 }
 </script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>

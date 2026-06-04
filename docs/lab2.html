@@ -31,20 +31,20 @@
   </div>
 
   <div class="callout callout-blue">
-    <strong>&#128218; How it works</strong>
+    <strong><i data-lucide="book-open"></i> How it works</strong>
     If a comment is stored as-is and rendered with <code>innerHTML</code>, any HTML/JS inside it executes. A payload like <code>&lt;img src=x onerror="alert(document.cookie)"&gt;</code> runs the moment the page loads.
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab(this,'vuln')">&#9888; Vulnerable</button>
-    <button class="tab-btn" onclick="switchTab(this,'secure')">&#9989; Secure</button>
-    <button class="tab-btn" onclick="switchTab(this,'explain')">&#128218; Explanation</button>
+    <button class="tab-btn active" onclick="switchTab(this,'vuln')"><i data-lucide="triangle-alert"></i> Vulnerable</button>
+    <button class="tab-btn" onclick="switchTab(this,'secure')"><i data-lucide="shield-check"></i> Secure</button>
+    <button class="tab-btn" onclick="switchTab(this,'explain')"><i data-lucide="book-open"></i> Explanation</button>
   </div>
 
   <!-- VULNERABLE TAB -->
   <div id="tab-vuln" class="tab-pane active">
     <div class="callout callout-red">
-      <strong>&#9888; Vulnerable comment board</strong>
+      <strong><i data-lucide="triangle-alert"></i> Vulnerable comment board</strong>
       Comments are rendered with <code>innerHTML</code> — any HTML or script you post will execute for every visitor.
     </div>
 
@@ -61,7 +61,7 @@
         </div>
         <button class="btn btn-danger" onclick="postVulnComment()">Post Comment</button>
 
-        <button class="hint-toggle" onclick="toggleHint('h1')">&#128161; Show payloads</button>
+        <button class="hint-toggle" onclick="toggleHint('h1')"><i data-lucide="lightbulb"></i> Show payloads</button>
         <div id="h1" class="hint-box">
           Basic alert:<br>
           <code>&lt;script&gt;alert('XSS!')&lt;/script&gt;</code><br><br>
@@ -91,7 +91,7 @@ div.innerHTML = `
     <div style="margin-top:1rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
         <h3 style="font-size:1rem">Live comment board</h3>
-        <button class="btn btn-ghost btn-sm" onclick="loadVulnComments()">&#8635; Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadVulnComments()"><i data-lucide="rotate-ccw"></i> Refresh</button>
       </div>
       <div id="v-comments"></div>
     </div>
@@ -100,7 +100,7 @@ div.innerHTML = `
   <!-- SECURE TAB -->
   <div id="tab-secure" class="tab-pane">
     <div class="callout callout-green">
-      <strong>&#9989; Secure comment board</strong>
+      <strong><i data-lucide="shield-check"></i> Secure comment board</strong>
       HTML special characters are escaped before storage. Scripts become inert text.
     </div>
 
@@ -144,7 +144,7 @@ el.textContent = comment.body</pre>
     <div style="margin-top:1rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
         <h3 style="font-size:1rem">Secure comment board</h3>
-        <button class="btn btn-ghost btn-sm" onclick="loadSecureComments()">&#8635; Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="loadSecureComments()"><i data-lucide="rotate-ccw"></i> Refresh</button>
       </div>
       <div id="s-comments"></div>
     </div>
@@ -153,7 +153,7 @@ el.textContent = comment.body</pre>
   <!-- EXPLANATION TAB -->
   <div id="tab-explain" class="tab-pane">
     <div class="panel">
-      <h3>&#128218; Full Explanation</h3>
+      <h3><i data-lucide="book-open"></i> Full Explanation</h3>
       <div style="font-size:.93rem;line-height:1.8;color:var(--muted)">
         <p><strong style="color:var(--text)">Root cause:</strong> User input is reflected back to the browser without escaping. The browser's HTML parser treats it as markup and executes any script it finds.</p>
         <br>
@@ -177,9 +177,9 @@ el.textContent = comment.body</pre>
     </div>
 
     <div class="panel">
-      <h3>&#127937; Challenge: cookie theft simulation</h3>
+      <h3><i data-lucide="flag"></i> Challenge: cookie theft simulation</h3>
       <p style="font-size:.9rem;color:var(--muted);margin-bottom:.75rem">Post a payload to the vulnerable board that reads <code>document.cookie</code> and shows it in an alert. Then explain why <code>HttpOnly</code> cookies would mitigate this.</p>
-      <button class="hint-toggle" onclick="toggleHint('h2')">&#128161; Show answer</button>
+      <button class="hint-toggle" onclick="toggleHint('h2')"><i data-lucide="lightbulb"></i> Show answer</button>
       <div id="h2" class="hint-box">
         Payload: <code>&lt;img src=x onerror="alert('Stolen: '+document.cookie)"&gt;</code><br><br>
         HttpOnly cookies cannot be read by JavaScript at all — <code>document.cookie</code> won't include them. Even with XSS, the attacker can't steal the session token if it has the HttpOnly flag.
@@ -287,5 +287,7 @@ function toggleHint(id) {
 
 loadVulnComments();
 </script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>
