@@ -133,7 +133,7 @@ nav .nav-links a.active::before { content: "> "; color: var(--t-cyan); }
 .hero { padding: 0 0 24px; text-align: left; position: relative; }
 
 /* Orb sits high; the headline is pulled up to overlap the stage's empty base */
-.orb-stage { width: 100%; height: 260px; margin: 0 0 -44px; position: relative; }
+.orb-stage { width: 100%; height: 260px; margin: 0 0 -90px; position: relative; }
 
 @keyframes glitch {
   0%,92%,100% { text-shadow: none; transform: none; clip-path: none; }
